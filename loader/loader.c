@@ -287,13 +287,17 @@ static inline char *loader_secure_getenv(const char *name, const struct loader_i
     out = __secure_getenv(name);
 #else
     out = loader_getenv(name, inst);
+    loader_log(inst, LOADER_INFO_BIT, 0,
+                   "Loader is using non-secure environment variable lookup for %s", name);
 #endif
-#endif
-    if (out == NULL) {
+#if !defined(USE_UNSAFE_FILE_SEARCH)
+    if (out == NULL && (IsHighIntegrity() || geteuid() == 0)) {
         loader_log(inst, LOADER_INFO_BIT, 0,
-                   "Loader is running with elevated permissions. Environment variable %s will be ignored.", name);
+                   "Loader is running with elevated permissions. Environment variable %s will be ignored", name);
     }
+#endif
     return out;
+#endif
 }
 
 static inline void loader_free_getenv(char *val, const struct loader_instance *inst) {
@@ -356,7 +360,7 @@ static inline char *loader_secure_getenv(const char *name, const struct loader_i
 #if !defined(USE_UNSAFE_FILE_SEARCH)
     if (IsHighIntegrity()) {
         loader_log(inst, LOADER_INFO_BIT, 0,
-                   "Loader is running with elevated permissions. Environment variable %s will be ignored.", name);
+                   "Loader is running with elevated permissions. Environment variable %s will be ignored", name);
         return NULL;
     }
 #endif
